@@ -61,6 +61,7 @@ export interface SentimentMetadata {
   darkSentiment?: 'accumulation' | 'distribution' | 'neutral' | 'mixed';
   riskLevel?: 'low' | 'medium' | 'high';
   recommendation?: 'BUY' | 'SELL' | 'HOLD' | 'WATCH' | 'AVOID';
+  sentimentCases?: SentimentCases; // AI-generated market analysis cases
 }
 
 // Price data from external APIs

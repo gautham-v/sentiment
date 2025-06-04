@@ -106,7 +106,7 @@ curl http://localhost:3000/api/cron/daily-analysis \
 
 ```env
 # Core APIs
-GROK_API_KEY=            # Grok API key from x.ai (required)
+GROK_API_KEY=            # Grok API key from x.ai (required) - Get from https://console.x.ai
 
 # Database
 DATABASE_URL=            # PostgreSQL connection string

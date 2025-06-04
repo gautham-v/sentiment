@@ -19,7 +19,7 @@ interface GrokSentimentResponse {
   };
 }
 
-const GROK_API_KEY = 'xai-APvkACuzEQr5F4SxPAY79yCMMLroaZSJ33c17hbt7PjNY7lucVlBaqaq4o7ast2WrSrsybkN5ZlUhxLt';
+const GROK_API_KEY = process.env.GROK_API_KEY;
 const GROK_API_URL = 'https://api.x.ai/v1/chat/completions';
 
 export async function analyzeSentiment(
@@ -85,29 +85,35 @@ export async function analyzeSentiment(
     
     // Generate AI analysis cases using Grok (only for analysis, not sentiment calculation)
     let sentimentCases = {
-      bullish: `Bullish case for ${name}: Positive social sentiment with ${totalDataPoints} total mentions. Key factors include strong community engagement and positive news flow. Watch for continued momentum and technical breakouts.`,
-      bearish: `Bearish case for ${name}: Market volatility and mixed signals may pressure the stock. Consider profit-taking levels and potential resistance areas. Monitor for any negative developments.`,
-      neutral: `Neutral case for ${name}: Balanced sentiment across sources suggests consolidation. Watch for clear directional catalysts or volume breakouts to confirm the next move.`
+      bullish: `Bullish case for ${name}: Strong business fundamentals with expanding market opportunities. Revenue growth and product innovation position the company well for future gains.`,
+      bearish: `Bearish case for ${name}: Facing competitive pressures and market headwinds. Margin compression and regulatory challenges may limit near-term growth potential.`,
+      neutral: `Neutral case for ${name}: Stable business operations with balanced risk-reward profile. Upcoming earnings and strategic initiatives will determine future direction.`
     };
     
     if (GROK_API_KEY) {
       console.log(`🔑 Grok API key found, attempting AI analysis for ${ticker}...`);
       try {
-        const prompt = `You are a financial analyst. Analyze ${name} (${ticker}) and provide detailed sentiment cases in this exact JSON structure:
+        const currentDate = new Date().toISOString().split('T')[0];
+        const prompt = `You are a fundamental analyst. Today's date is ${currentDate}. 
+
+Use live search to analyze ${name} (${ticker}) focusing ONLY on fundamentals:
+- Latest earnings reports and revenue/profit trends
+- Business developments and product launches
+- Competitive positioning and market share
+- Management changes and strategic initiatives
+- Industry trends and regulatory environment
+
+Provide fundamental analysis in this exact JSON structure. Keep each case to 2-3 sentences focusing on business fundamentals only:
 
 {
   "sentiment_cases": {
-    "bullish": "<Detailed bullish case: Strong fundamentals (revenue growth, earnings beats, new products), positive industry trends, technical breakouts, upcoming catalysts.>",
-    "bearish": "<Detailed bearish case: Fundamental concerns (slowing growth, margin pressure, competition), industry headwinds, technical breakdown, upcoming risks.>",
-    "neutral": "<Balanced case: Mixed signals, range-bound patterns, upcoming events for clarity, key levels to monitor.>"
+    "bullish": "<Bullish fundamental case: Focus on revenue growth, earnings beats, product innovation, market expansion, competitive advantages. Max 3 sentences.>",
+    "bearish": "<Bearish fundamental case: Focus on revenue decline, margin pressure, competitive threats, regulatory risks, market saturation. Max 3 sentences.>",
+    "neutral": "<Neutral fundamental case: Focus on stable business metrics, balanced growth outlook, upcoming earnings/product launches to watch. Max 3 sentences.>"
   }
 }
 
-Base analysis on: Recent earnings/financial performance, company news/developments, industry trends, technical patterns, macroeconomic factors affecting ${assetType === 'crypto' ? 'crypto' : 'equity'} markets.
-
-Social data context: ${redditData.mentions_count} Reddit mentions (${redditData.sentiment_score}%), ${stocktwitsData.mentions_count} StockTwits messages (${stocktwitsData.sentiment_score}%), ${newsData.article_count} news articles (${newsData.sentiment_score}%).
-
-IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental insights.`;
+IMPORTANT: Do NOT mention stock prices, price targets, or technical analysis. Focus exclusively on business fundamentals and company performance.`;
 
         const response = await fetch(GROK_API_URL, {
           method: 'POST',
@@ -122,7 +128,8 @@ IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental i
               content: prompt
             }],
             temperature: 0.3,
-            max_tokens: 1500
+            max_tokens: 2500,
+            live_search: true  // Enable live search for current data
           })
         });
 
@@ -145,7 +152,7 @@ IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental i
         }
         
       } catch (grokError) {
-        console.warn(`Grok API error for ${ticker}, using fallback analysis cases:`, grokError.message);
+        console.warn(`Grok API error for ${ticker}, using fallback analysis cases:`, grokError instanceof Error ? grokError.message : String(grokError));
       }
     }
     
@@ -208,9 +215,9 @@ IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental i
       sources_analyzed: 0,
       mentions_count: 0,
       sentiment_cases: {
-        bullish: `Bullish case for ${name}: Monitor for positive developments and technical breakouts that could drive momentum higher.`,
-        bearish: `Bearish case for ${name}: Watch for potential risks and resistance levels that could limit upside movement.`,
-        neutral: `Neutral case for ${name}: Balanced outlook suggests waiting for clearer directional signals before taking positions.`
+        bullish: `Bullish case for ${name}: Monitor for earnings growth, product launches, and market expansion opportunities that could drive performance.`,
+        bearish: `Bearish case for ${name}: Watch for competitive threats, margin pressure, and regulatory challenges that could impact growth.`,
+        neutral: `Neutral case for ${name}: Balanced fundamentals suggest monitoring upcoming earnings and strategic developments for clearer direction.`
       }
     };
   }
