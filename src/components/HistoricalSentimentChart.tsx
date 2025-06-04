@@ -9,6 +9,7 @@ interface HistoricalSentimentChartProps {
   currentSentiment: number;
   currentPrice: number;
   currentCorrelation: number;
+  isMobile?: boolean;
 }
 
 type TimePeriod = '1W' | '1M' | '3M' | '1Y';
@@ -24,7 +25,8 @@ export default function HistoricalSentimentChart({
   ticker, 
   currentSentiment, 
   currentPrice, 
-  currentCorrelation 
+  currentCorrelation,
+  isMobile = false
 }: HistoricalSentimentChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('1M');
   const [data, setData] = useState<any[]>([]);
@@ -112,13 +114,11 @@ export default function HistoricalSentimentChart({
     fetchHistoricalData();
   }, [ticker, selectedPeriod, currentSentiment, currentPrice, currentCorrelation]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-text-muted">Loading historical data...</div>
-      </div>
-    );
-  }
+  const ChartLoadingState = () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-sm text-text-muted">Loading historical data...</div>
+    </div>
+  );
 
   if (error && data.length === 0) {
     return (
@@ -130,34 +130,68 @@ export default function HistoricalSentimentChart({
 
   return (
     <div className="space-y-3">
-      {/* Header with time period selector */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-text-muted">
-          <Calendar className="w-4 h-4" />
-          <span>Price History & Sentiment Trend</span>
+      {/* Header with time period selector - Desktop Only */}
+      {!isMobile && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-text-muted">
+            <Calendar className="w-4 h-4" />
+            <span>Price History & Sentiment Trend</span>
+          </div>
+          
+          {/* Time Period Selector - Desktop */}
+          <div className="flex gap-1">
+            {(['1W', '1M', '3M', '1Y'] as TimePeriod[]).map((period) => (
+              <button
+                key={period}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPeriod(period);
+                }}
+                disabled={loading}
+                className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                  selectedPeriod === period
+                    ? 'bg-accent-primary text-white'
+                    : loading 
+                    ? 'bg-background-secondary text-text-muted opacity-50 cursor-not-allowed'
+                    : 'bg-background-secondary text-text-muted hover:bg-background-tertiary'
+                }`}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
         </div>
-        
-        {/* Time Period Selector */}
-        <div className="flex gap-1">
-          {(['1W', '1M', '3M', '1Y'] as TimePeriod[]).map((period) => (
-            <button
-              key={period}
-              onClick={() => setSelectedPeriod(period)}
-              className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                selectedPeriod === period
-                  ? 'bg-accent-primary text-white'
-                  : 'bg-background-secondary text-text-muted hover:bg-background-tertiary'
-              }`}
-            >
-              {period}
-            </button>
-          ))}
-        </div>
-      </div>
-      
+      )}
       
       {/* Chart */}
-      <SentimentTrendChart ticker={ticker} data={data} />
+      {loading ? <ChartLoadingState /> : <SentimentTrendChart ticker={ticker} data={data} isMobile={isMobile} />}
+      
+      {/* Time Period Selector - Mobile (Below Chart) */}
+      {isMobile && (
+        <div className="flex justify-center">
+          <div className="flex gap-1 bg-background-secondary p-1 rounded-lg border border-border-primary">
+            {(['1W', '1M', '3M', '1Y'] as TimePeriod[]).map((period) => (
+              <button
+                key={period}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPeriod(period);
+                }}
+                disabled={loading}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  selectedPeriod === period
+                    ? 'bg-accent-primary text-white shadow-sm'
+                    : loading
+                    ? 'text-text-muted opacity-50 cursor-not-allowed'
+                    : 'text-text-muted hover:text-text-primary hover:bg-background-primary'
+                }`}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -227,16 +227,33 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
   return (
     <div className="card p-0 overflow-hidden rounded-none sm:rounded-lg">
       {/* Table Header */}
-      <div className="bg-background-tertiary p-3 sm:p-2 border-b border-border-primary">
-        <div>
-          <h3 className="text-sm sm:text-base font-semibold text-text-primary">Market Sentiment Analysis</h3>
-          <p className="text-xs text-text-muted mt-0.5">Click on any row to expand detailed analysis</p>
+      <div>
+        {/* Desktop Header */}
+        <div className="hidden md:block bg-background-tertiary border-b border-border-primary p-2">
+          <div>
+            <h3 className="text-base font-semibold text-text-primary">Market Sentiment Analysis</h3>
+            <p className="text-xs text-text-muted mt-0.5">Click on any row to expand detailed analysis</p>
+            {lastSentimentUpdate && (
+              <div className="text-xs text-text-muted mt-1">
+                Updated {new Date(lastSentimentUpdate).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric'
+                })} at {new Date(lastSentimentUpdate).toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: true,
+                  timeZoneName: 'short'
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Mobile Header - Minimal */}
+        <div className="md:hidden py-2 px-3 text-center">
           {lastSentimentUpdate && (
-            <div className="text-[10px] sm:text-xs text-text-muted mt-1">
-              Updated {new Date(lastSentimentUpdate).toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric'
-              })} at {new Date(lastSentimentUpdate).toLocaleTimeString('en-US', { 
+            <div className="text-xs text-text-muted">
+              Updated {new Date(lastSentimentUpdate).toLocaleTimeString('en-US', { 
                 hour: '2-digit', 
                 minute: '2-digit',
                 hour12: true,
@@ -374,6 +391,16 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                   <tr className="bg-background-secondary">
                     <td colSpan={10} className="p-4">
                       <div className="max-w-7xl mx-auto space-y-4">
+                        {/* Full Width Chart Section - Moved to Top */}
+                        <div className="bg-background-primary rounded-lg p-4 border border-border-primary">
+                          <HistoricalSentimentChart 
+                            ticker={asset.ticker}
+                            currentSentiment={getCombinedSentiment(asset)}
+                            currentPrice={asset.sentiment.price}
+                            currentCorrelation={asset.sentiment.correlation || 0}
+                          />
+                        </div>
+
                         {/* Sentiment Sources and Key Metrics Row */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           {/* Left Column: Sentiment Sources */}
@@ -501,16 +528,6 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Full Width Chart Section */}
-                        <div className="bg-background-primary rounded-lg p-4 border border-border-primary">
-                          <HistoricalSentimentChart 
-                            ticker={asset.ticker}
-                            currentSentiment={getCombinedSentiment(asset)}
-                            currentPrice={asset.sentiment.price}
-                            currentCorrelation={asset.sentiment.correlation || 0}
-                          />
-                        </div>
                       </div>
                     </td>
                   </tr>
@@ -537,27 +554,23 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                   <AssetLogo ticker={asset.ticker} size="md" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-text-primary text-sm">{asset.ticker}</span>
-                      <span className="text-xs text-text-muted">{asset.name}</span>
+                      <span className="font-semibold text-text-primary text-base">{asset.ticker}</span>
+                      <span className="text-sm text-text-muted">{asset.name}</span>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       {/* Combined Sentiment */}
                       <div className="flex items-center gap-1">
-                        <span className="text-lg font-bold" style={{ color: getSentimentColor(asset.sentiment ? getCombinedSentiment(asset) : 0) }}>
+                        <span className="text-xl font-bold" style={{ color: getSentimentColor(asset.sentiment ? getCombinedSentiment(asset) : 0) }}>
                           {asset.sentiment ? getCombinedSentiment(asset) : '--'}
                         </span>
-                        <span className="text-[10px] text-text-muted">sentiment</span>
+                        <span className="text-xs text-text-muted">sentiment</span>
                       </div>
                       
-                      {/* Signal & Momentum */}
-                      <div className="flex items-center gap-2">
-                        <SignalStrength 
-                          strength={asset.sentiment?.metadata?.signalStrength || calculateSignalStrength(asset)} 
-                          showLabel={false}
-                        />
+                      {/* Momentum Only */}
+                      <div className="flex items-center">
                         <MomentumIndicator 
                           velocity={asset.sentiment?.metadata?.sentimentVelocity || calculateVelocity(asset)}
-                          showValue={false}
+                          showValue={true}
                         />
                       </div>
                     </div>
@@ -566,10 +579,10 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                 
                 {/* Right: Price Info */}
                 <div className="text-right">
-                  <div className="font-semibold text-text-primary text-sm">
+                  <div className="font-semibold text-text-primary text-base">
                     ${asset.sentiment?.price ? asset.sentiment.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
                   </div>
-                  <div className={`text-sm font-medium ${
+                  <div className={`text-base font-medium ${
                     (asset.sentiment?.change24h || 0) >= 0 ? 'text-status-bullish' : 'text-status-bearish'
                   }`}>
                     {asset.sentiment?.change24h ? 
@@ -583,7 +596,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
               {/* Source Sentiments Row */}
               {asset.sentiment && (
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-primary/50">
-                  <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-3 text-sm">
                     <div className="flex items-center gap-1">
                       <SourceLogo source="reddit" size="xs" />
                       <span className="font-medium" style={{ color: getSentimentColor(asset.sentiment.sourcesData.redditSentiment) }}>
@@ -617,146 +630,120 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
 
             {/* Mobile Expanded View */}
             {expandedRows.has(asset.ticker) && asset.sentiment && (
-              <div className="bg-background-secondary px-3 pb-3 space-y-3">
-                {/* Additional Metrics */}
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-background-primary p-2 rounded-lg border border-border-primary">
-                    <div className="text-[10px] text-text-muted">Volume</div>
-                    <div className="font-medium text-xs" style={{ color: getVolumeSignalColor(asset.sentiment.metadata.volumeSignal) }}>
-                      {asset.sentiment.metadata.volumeSignal}
-                    </div>
-                  </div>
-                  <div className="bg-background-primary p-2 rounded-lg border border-border-primary">
-                    <div className="text-[10px] text-text-muted">Correlation</div>
-                    <div className="font-medium text-xs">
-                      {asset.sentiment.correlation ? 
-                        `${asset.sentiment.correlation >= 0 ? '+' : ''}${(asset.sentiment.correlation * 100).toFixed(0)}%` : 
-                        '--'
-                      }
-                    </div>
-                  </div>
-                  <div className="bg-background-primary p-2 rounded-lg border border-border-primary">
-                    <div className="text-[10px] text-text-muted">Confidence</div>
-                    <div className="font-medium text-xs text-accent-primary">
-                      {asset.sentiment.confidence}%
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Detailed Sentiment Breakdown */}
-                <div className="bg-background-primary p-3 rounded-lg border border-border-primary">
-                  <h4 className="text-xs font-medium text-text-primary mb-2 flex items-center gap-1">
-                    <BarChart3 className="w-3 h-3 text-accent-primary" />
-                    Sentiment Breakdown
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <SourceLogo source="reddit" size="xs" />
-                        <span className="text-xs text-text-secondary">Reddit</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm" style={{ color: getSentimentColor(asset.sentiment.sourcesData.redditSentiment) }}>
-                          {asset.sentiment.sourcesData.redditSentiment}
-                        </span>
-                        <span className="text-[10px] text-text-muted">
-                          ({asset.sentiment.sourcesData.redditMentions} mentions)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <SourceLogo source="stocktwits" size="xs" />
-                        <span className="text-xs text-text-secondary">StockTwits</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm" style={{ color: getSentimentColor(asset.sentiment.sourcesData.stocktwitsSentiment) }}>
-                          {asset.sentiment.sourcesData.stocktwitsSentiment}
-                        </span>
-                        <span className="text-[10px] text-text-muted">
-                          ({asset.sentiment.sourcesData.stocktwitsMessages} msgs)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <SourceLogo source="news" size="xs" />
-                        <span className="text-xs text-text-secondary">News</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm" style={{ color: getSentimentColor(asset.sentiment.sourcesData.newsSentiment || 50) }}>
-                          {asset.sentiment.sourcesData.newsSentiment || 50}
-                        </span>
-                        <span className="text-[10px] text-text-muted">
-                          ({asset.sentiment.sourcesData.newsArticles || 0} articles)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* AI Analysis with Slider */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-medium text-text-primary flex items-center gap-1">
-                      ✨ AI Market Analysis
-                    </h4>
-                    
-                    {/* Mobile Case Slider */}
-                    <div className="flex bg-background-secondary rounded-full p-0.5 border border-border-primary">
-                      {['bearish', 'neutral', 'bullish'].map((caseType) => (
-                        <button
-                          key={caseType}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCase(asset.ticker, caseType as any);
-                          }}
-                          className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-all capitalize ${
-                            getSelectedCase(asset.ticker, asset) === caseType
-                              ? caseType === 'bearish' 
-                                ? 'bg-red-500 text-white shadow-sm' 
-                                : caseType === 'neutral'
-                                ? 'bg-gray-500 text-white shadow-sm'
-                                : 'bg-green-500 text-white shadow-sm'
-                              : 'text-text-secondary hover:text-text-primary hover:bg-background-primary'
-                          }`}
-                        >
-                          {caseType}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-background-primary rounded-lg p-3 border border-border-primary">
-                    <div className="text-[11px] text-text-secondary leading-relaxed">
-                      {(() => {
-                        const selectedCase = getSelectedCase(asset.ticker, asset);
-                        
-                        if (asset.sentiment.sentimentCases && asset.sentiment.sentimentCases[selectedCase]) {
-                          return asset.sentiment.sentimentCases[selectedCase];
-                        }
-                        
-                        // Fallback to original AI insights if sentiment cases not available
-                        return asset.sentiment.aiInsights || 'No analysis available';
-                      })()}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Chart Section */}
-                <div className="bg-background-primary rounded-lg p-3 border border-border-primary">
+              <div className="bg-background-secondary px-3 pb-3 space-y-4">
+                {/* Chart Section - Moved Above AI Analysis */}
+                <div 
+                  className="bg-background-primary rounded-xl p-4 border border-border-primary shadow-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <HistoricalSentimentChart 
                     ticker={asset.ticker}
                     currentSentiment={getCombinedSentiment(asset)}
                     currentPrice={asset.sentiment.price}
                     currentCorrelation={asset.sentiment.correlation || 0}
+                    isMobile={true}
                   />
                 </div>
+                
+                {/* AI Analysis - Now Collapsible */}
+                <MobileAIAnalysis 
+                  asset={asset}
+                  selectedCase={getSelectedCase(asset.ticker, asset)}
+                  onCaseChange={(caseType) => setSelectedCase(asset.ticker, caseType)}
+                />
               </div>
             )}
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Mobile AI Analysis Component with Collapsible Feature
+interface MobileAIAnalysisProps {
+  asset: AssetWithSentiment;
+  selectedCase: 'bearish' | 'neutral' | 'bullish';
+  onCaseChange: (caseType: 'bearish' | 'neutral' | 'bullish') => void;
+}
+
+function MobileAIAnalysis({ asset, selectedCase, onCaseChange }: MobileAIAnalysisProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div 
+      className="bg-background-primary rounded-xl border border-border-primary shadow-sm overflow-hidden"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header - Always Visible */}
+      <div 
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-background-secondary transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+          ✨ AI Market Analysis
+        </h4>
+        
+        <div className="flex items-center gap-2">
+          {/* Preview indicator */}
+          <div className="flex items-center gap-1">
+            <div className={`w-2 h-2 rounded-full ${
+              selectedCase === 'bullish' ? 'bg-green-500' :
+              selectedCase === 'bearish' ? 'bg-red-500' : 'bg-gray-500'
+            }`} />
+            <span className="text-xs text-text-muted capitalize">{selectedCase}</span>
+          </div>
+          
+          <ChevronDown className={`w-4 h-4 text-text-muted transition-transform ${
+            isExpanded ? 'rotate-180' : ''
+          }`} />
+        </div>
+      </div>
+      
+      {/* Expandable Content */}
+      {isExpanded && (
+        <div className="border-t border-border-primary p-4 space-y-3">
+          {/* Case Slider */}
+          <div className="flex justify-center">
+            <div className="flex bg-background-secondary rounded-full p-1 border border-border-primary">
+              {['bearish', 'neutral', 'bullish'].map((caseType) => (
+                <button
+                  key={caseType}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCaseChange(caseType as any);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all capitalize ${
+                    selectedCase === caseType
+                      ? caseType === 'bearish' 
+                        ? 'bg-red-500 text-white shadow-sm' 
+                        : caseType === 'neutral'
+                        ? 'bg-gray-500 text-white shadow-sm'
+                        : 'bg-green-500 text-white shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-background-primary'
+                  }`}
+                >
+                  {caseType}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Analysis Content */}
+          <div className="bg-background-secondary rounded-lg p-3 border border-border-primary">
+            <div className="text-sm text-text-secondary leading-relaxed">
+              {(() => {
+                if (asset.sentiment?.sentimentCases && asset.sentiment.sentimentCases[selectedCase]) {
+                  return asset.sentiment.sentimentCases[selectedCase];
+                }
+                
+                // Fallback to original AI insights if sentiment cases not available
+                return asset.sentiment?.aiInsights || 'No analysis available';
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

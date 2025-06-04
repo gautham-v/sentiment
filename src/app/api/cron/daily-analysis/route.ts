@@ -60,12 +60,13 @@ export async function GET(request: NextRequest) {
           priceChange = priceData.change24h;
         }
 
-        // Get historical data for correlation calculation
+        // Get historical data for correlation calculation (excluding today)
         const historicalData = await prisma.sentimentAnalysis.findMany({
           where: {
             ticker: asset.ticker,
             analysisDate: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+              lt: analysisDate // Exclude today's date
             }
           },
           orderBy: { analysisDate: 'asc' }

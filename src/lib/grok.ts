@@ -97,9 +97,9 @@ export async function analyzeSentiment(
 
 {
   "sentiment_cases": {
-    "bullish": "<Detailed bullish case: Strong fundamentals (revenue growth, earnings beats, new products), positive industry trends, technical breakouts, upcoming catalysts. Include specific insights.>",
-    "bearish": "<Detailed bearish case: Fundamental concerns (slowing growth, margin pressure, competition), industry headwinds, technical breakdown, upcoming risks. Include specific insights.>",
-    "neutral": "<Balanced case: Mixed signals, range-bound patterns, upcoming events for clarity, key levels to monitor. Include specific insights.>"
+    "bullish": "<Detailed bullish case: Strong fundamentals (revenue growth, earnings beats, new products), positive industry trends, technical breakouts, upcoming catalysts.>",
+    "bearish": "<Detailed bearish case: Fundamental concerns (slowing growth, margin pressure, competition), industry headwinds, technical breakdown, upcoming risks.>",
+    "neutral": "<Balanced case: Mixed signals, range-bound patterns, upcoming events for clarity, key levels to monitor.>"
   }
 }
 
@@ -107,7 +107,7 @@ Base analysis on: Recent earnings/financial performance, company news/developmen
 
 Social data context: ${redditData.mentions_count} Reddit mentions (${redditData.sentiment_score}%), ${stocktwitsData.mentions_count} StockTwits messages (${stocktwitsData.sentiment_score}%), ${newsData.article_count} news articles (${newsData.sentiment_score}%).
 
-IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental insights. Focus on actionable investment analysis.`;
+IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental insights.`;
 
         const response = await fetch(GROK_API_URL, {
           method: 'POST',

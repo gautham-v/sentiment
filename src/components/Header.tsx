@@ -1,8 +1,9 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import { Search, Moon, Sun, Info, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import HamburgerMenu from './HamburgerMenu';
+import Link from 'next/link';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -11,6 +12,7 @@ interface HeaderProps {
 export default function Header({ onSearch }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   useEffect(() => {
     // Check for system preference on mount
@@ -53,8 +55,9 @@ export default function Header({ onSearch }: HeaderProps) {
 
   return (
     <header className="bg-background-secondary border-b border-border-primary sticky top-0 z-50">
-      <div className="max-w-[1600px] mx-auto px-5 py-3">
-        <div className="flex items-center justify-between gap-5">
+      <div className="max-w-[1600px] mx-auto px-4 py-3">
+        {/* Desktop Layout */}
+        <div className="hidden md:flex items-center justify-between gap-5">
           {/* Logo and Branding */}
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
@@ -72,14 +75,80 @@ export default function Header({ onSearch }: HeaderProps) {
                 placeholder="Search assets..."
                 value={searchQuery}
                 onChange={handleSearch}
-                className="bg-background-primary border border-border-primary text-text-primary pl-9 pr-3 py-1.5 rounded-md w-32 sm:w-52 text-sm focus:outline-none focus:border-accent-primary/50 transition-colors"
+                className="bg-background-primary border border-border-primary text-text-primary pl-9 pr-3 py-1.5 rounded-md w-52 text-sm focus:outline-none focus:border-accent-primary/50 transition-colors"
               />
             </div>
 
             {/* Hamburger Menu */}
             <HamburgerMenu theme={theme} onThemeToggle={toggleTheme} />
-
           </div>
+        </div>
+
+        {/* Mobile Layout */}
+        <div className="md:hidden">
+          {!isSearchExpanded ? (
+            /* Normal Mobile Header */
+            <div className="flex items-center justify-between">
+              {/* Minimal Logo */}
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">S</span>
+                </div>
+              </div>
+
+              {/* Icon Controls */}
+              <div className="flex items-center gap-2">
+                {/* Search Icon */}
+                <button
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="p-2 bg-background-primary border border-border-primary rounded-lg hover:bg-background-tertiary transition-colors"
+                  aria-label="Search"
+                >
+                  <Search className="w-4 h-4 text-text-muted" />
+                </button>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 bg-background-primary border border-border-primary rounded-lg hover:bg-background-tertiary transition-colors"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4 text-text-muted" /> : <Moon className="w-4 h-4 text-text-muted" />}
+                </button>
+
+                {/* About */}
+                <Link
+                  href="/about"
+                  className="p-2 bg-background-primary border border-border-primary rounded-lg hover:bg-background-tertiary transition-colors"
+                  aria-label="About"
+                >
+                  <Info className="w-4 h-4 text-text-muted" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* Expanded Search Mode */
+            <div className="flex items-center gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search assets..."
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="w-full bg-background-primary border border-border-primary text-text-primary pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:border-accent-primary/50 transition-colors"
+                  autoFocus
+                />
+              </div>
+              <button
+                onClick={() => setIsSearchExpanded(false)}
+                className="p-2 bg-background-primary border border-border-primary rounded-lg hover:bg-background-tertiary transition-colors"
+                aria-label="Close search"
+              >
+                <X className="w-4 h-4 text-text-muted" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -23,9 +23,10 @@ interface SentimentTrendData {
 interface SentimentTrendChartProps {
   data: SentimentTrendData[];
   ticker: string;
+  isMobile?: boolean;
 }
 
-export default function SentimentTrendChart({ data, ticker }: SentimentTrendChartProps) {
+export default function SentimentTrendChart({ data, ticker, isMobile = false }: SentimentTrendChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="text-sm text-text-muted text-center py-8">
@@ -50,20 +51,22 @@ export default function SentimentTrendChart({ data, ticker }: SentimentTrendChar
 
   return (
     <div className="space-y-4">
-      <div>
-        <h4 className="font-medium text-text-primary mb-1 text-sm">
-          Sentiment vs Price Trend
-        </h4>
-        <p className="text-xs text-text-muted">
-          Tracking sentiment changes and price correlation over time
-        </p>
-      </div>
+      {!isMobile && (
+        <div>
+          <h4 className="font-medium text-text-primary mb-1 text-sm">
+            Sentiment vs Price Trend
+          </h4>
+          <p className="text-xs text-text-muted">
+            Tracking sentiment changes and price correlation over time
+          </p>
+        </div>
+      )}
       
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart 
             data={normalizedData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 5, right: 10, left: 5, bottom: 5 }}
           >
             <defs>
               <linearGradient id={`sentimentGradient-${ticker}`} x1="0" y1="0" x2="0" y2="1">
@@ -79,19 +82,22 @@ export default function SentimentTrendChart({ data, ticker }: SentimentTrendChar
             <XAxis 
               dataKey="displayDate" 
               stroke="#9CA3AF"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 10 }}
+              axisLine={false}
             />
             <YAxis 
               stroke="#9CA3AF"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 10 }}
               domain={[0, 100]}
-              label={{ value: 'Score', angle: -90, position: 'insideLeft', style: { fill: '#9CA3AF' } }}
+              width={25}
+              axisLine={false}
             />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: '#1F2937', 
                 border: '1px solid #374151',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                fontSize: '12px'
               }}
               labelStyle={{ color: '#E5E7EB' }}
               formatter={(value: any, name: string, props: any) => {
@@ -106,8 +112,9 @@ export default function SentimentTrendChart({ data, ticker }: SentimentTrendChar
               }}
             />
             <Legend 
-              wrapperStyle={{ fontSize: '12px' }}
+              wrapperStyle={{ fontSize: '11px' }}
               iconType="line"
+              align="center"
             />
             <Area
               type="monotone"
