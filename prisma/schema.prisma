@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Asset {
+  ticker            String              @id
+  name              String
+  assetType         String              @map("asset_type")
+  color             String
+  sentimentAnalyses SentimentAnalysis[]
+
+  @@map("assets")
+}
+
+model SentimentAnalysis {
+  id             Int      @id @default(autoincrement())
+  ticker         String
+  analysisDate   DateTime @map("analysis_date")
+  sentimentScore Int      @map("sentiment_score")
+  status         String
+  confidence     Int
+  price          Float?
+  change24h      Float?   @map("change_24h")
+  aiInsights     String?  @map("ai_insights")
+  correlation    Float?
+  sourcesData    String   @map("sources_data")
+  metadata       String
+  createdAt      DateTime @default(now()) @map("created_at")
+  asset          Asset    @relation(fields: [ticker], references: [ticker])
+
+  @@unique([ticker, analysisDate])
+  @@map("sentiment_analyses")
+}

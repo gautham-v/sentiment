@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme */
+    --background-primary: #ffffff;
+    --background-secondary: #f8fafc;
+    --background-tertiary: #f1f5f9;
+    --border-primary: #e2e8f0;
+    --border-secondary: #cbd5e1;
+    --accent-primary: #3b82f6;
+    --accent-secondary: #6366f1;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --status-bullish: #16a34a;
+    --status-bearish: #dc2626;
+    --status-neutral: #64748b;
+  }
+
+  .dark {
+    /* Dark theme */
+    --background-primary: #0a0a0a;
+    --background-secondary: #141414;
+    --background-tertiary: #1a1a1a;
+    --border-primary: #2a2a2a;
+    --border-secondary: #3a3a3a;
+    --accent-primary: #667eea;
+    --accent-secondary: #764ba2;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888888;
+    --text-muted: #666666;
+    --status-bullish: #22c55e;
+    --status-bearish: #ef4444;
+    --status-neutral: #64748b;
+  }
+  
+  * {
+    @apply border-border-primary;
+  }
+  
+  body {
+    @apply bg-background-primary text-text-primary transition-colors duration-200;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Custom scrollbar for dark theme */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-background-secondary;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-border-primary rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-secondary;
+  }
+
+  /* Gradient animations */
+  .gradient-border {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: 200% 100%;
+    animation: gradient 3s linear infinite;
+  }
+  
+  /* Status indicators */
+  .status-bullish {
+    @apply text-status-bullish;
+  }
+  
+  .status-bearish {
+    @apply text-status-bearish;
+  }
+  
+  .status-neutral {
+    @apply text-status-neutral;
+  }
+
+  /* Interactive elements */
+  .btn-primary {
+    @apply bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-90;
+  }
+  
+  .btn-secondary {
+    @apply bg-background-tertiary border border-border-primary text-text-primary px-4 py-2 rounded-lg font-medium transition-colors hover:bg-border-primary hover:border-border-secondary;
+  }
+
+  /* Table styles */
+  .table-row-hover {
+    @apply hover:bg-background-tertiary transition-colors cursor-pointer;
+  }
+  
+  /* Cards */
+  .card {
+    @apply bg-background-secondary border border-border-primary rounded-lg p-4;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-br from-background-tertiary to-background-secondary border border-border-primary rounded-lg;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent;
+  }
+  
+  .animate-pulse-dot {
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.2);
+    }
+  }
+  
+  @keyframes gradient {
+    0% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 200% 0%;
+    }
+  }
+  
+  .animate-gradient-x {
+    background-size: 200% 100%;
+    animation: gradient-x 3s linear infinite;
+  }
+  
+  @keyframes gradient-x {
+    0% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 200% 0%;
+    }
+  }
+} 
