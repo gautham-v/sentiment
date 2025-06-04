@@ -361,7 +361,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                   <td className="p-2">
                     <div>
                       <span className="font-medium text-text-primary text-sm">
-                        ${asset.sentiment?.price?.toLocaleString() || '--'}
+                        ${asset.sentiment?.price ? asset.sentiment.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
                       </span>
                       {asset.sentiment?.createdAt && (
                         <div className="text-[10px] text-text-muted">
@@ -570,7 +570,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                 {/* Right: Price Info */}
                 <div className="text-right">
                   <div className="font-semibold text-text-primary text-sm">
-                    ${asset.sentiment?.price?.toLocaleString() || '--'}
+                    ${asset.sentiment?.price ? asset.sentiment.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
                   </div>
                   <div className={`text-sm font-medium ${
                     (asset.sentiment?.change24h || 0) >= 0 ? 'text-status-bullish' : 'text-status-bearish'

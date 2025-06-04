@@ -97,7 +97,7 @@ export default function SentimentTrendChart({ data, ticker }: SentimentTrendChar
               formatter={(value: any, name: string, props: any) => {
                 if (name === 'Price' && props?.payload) {
                   const originalPrice = props.payload.price;
-                  return [`$${originalPrice.toLocaleString()}`, name];
+                  return [`$${originalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name];
                 }
                 if (name === 'Sentiment' && value === null) {
                   return ['No data', name];

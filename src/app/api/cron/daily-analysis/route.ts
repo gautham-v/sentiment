@@ -117,27 +117,81 @@ export async function GET(request: NextRequest) {
           mentionsCount: sentimentData.mentions_count
         };
 
-        // Calculate combined sentiment for today (weighted average)
-        const todayCombinedSentiment = Math.round(
-          redditSentiment * 0.4 + 
-          stocktwitsSentiment * 0.4 + 
-          newsSentiment * 0.2
-        );
+        // Calculate combined sentiment for today using weighted approach (matching grok.ts logic)
+        const totalDataPoints = redditMentions + stocktwitsMessages + newsArticles;
+        let todayCombinedSentiment;
+        
+        if (totalDataPoints === 0) {
+          todayCombinedSentiment = 50;
+        } else {
+          // Calculate proportional weights but ensure Reddit gets minimum 10%
+          let redditWeight = redditMentions / totalDataPoints;
+          let stocktwitsWeight = stocktwitsMessages / totalDataPoints;
+          let newsWeight = newsArticles / totalDataPoints;
+          
+          // Ensure Reddit weight is at least 10%
+          if (redditWeight < 0.1) {
+            const deficit = 0.1 - redditWeight;
+            redditWeight = 0.1;
+            
+            // Redistribute the deficit proportionally from other sources
+            const otherTotal = stocktwitsWeight + newsWeight;
+            if (otherTotal > 0) {
+              const reductionFactor = (1 - redditWeight) / otherTotal;
+              stocktwitsWeight *= reductionFactor;
+              newsWeight *= reductionFactor;
+            }
+          }
+          
+          todayCombinedSentiment = Math.round(
+            redditSentiment * redditWeight + 
+            stocktwitsSentiment * stocktwitsWeight + 
+            newsSentiment * newsWeight
+          );
+        }
 
         // Calculate sentiment velocity (momentum) based on historical data
         let sentimentVelocity = 0;
         if (historicalData.length >= 1) {
-          // Get yesterday's data and calculate combined sentiment
+          // Get yesterday's data and calculate combined sentiment using same logic
           const yesterdayData = historicalData[historicalData.length - 1];
           const yesterdaySourcesData = typeof yesterdayData.sourcesData === 'string' 
             ? JSON.parse(yesterdayData.sourcesData) 
             : yesterdayData.sourcesData;
           
-          const yesterdayCombinedSentiment = Math.round(
-            yesterdaySourcesData.redditSentiment * 0.4 + 
-            yesterdaySourcesData.stocktwitsSentiment * 0.4 + 
-            (yesterdaySourcesData.newsSentiment || 50) * 0.2
-          );
+          const yesterdayTotalDataPoints = (yesterdaySourcesData.redditMentions || 0) + 
+                                          (yesterdaySourcesData.stocktwitsMessages || 0) + 
+                                          (yesterdaySourcesData.newsArticles || 0);
+          
+          let yesterdayCombinedSentiment;
+          if (yesterdayTotalDataPoints === 0) {
+            yesterdayCombinedSentiment = 50;
+          } else {
+            // Calculate proportional weights but ensure Reddit gets minimum 10%
+            let yesterdayRedditWeight = (yesterdaySourcesData.redditMentions || 0) / yesterdayTotalDataPoints;
+            let yesterdayStocktwitsWeight = (yesterdaySourcesData.stocktwitsMessages || 0) / yesterdayTotalDataPoints;
+            let yesterdayNewsWeight = (yesterdaySourcesData.newsArticles || 0) / yesterdayTotalDataPoints;
+            
+            // Ensure Reddit weight is at least 10%
+            if (yesterdayRedditWeight < 0.1) {
+              const deficit = 0.1 - yesterdayRedditWeight;
+              yesterdayRedditWeight = 0.1;
+              
+              // Redistribute the deficit proportionally from other sources
+              const otherTotal = yesterdayStocktwitsWeight + yesterdayNewsWeight;
+              if (otherTotal > 0) {
+                const reductionFactor = (1 - yesterdayRedditWeight) / otherTotal;
+                yesterdayStocktwitsWeight *= reductionFactor;
+                yesterdayNewsWeight *= reductionFactor;
+              }
+            }
+            
+            yesterdayCombinedSentiment = Math.round(
+              (yesterdaySourcesData.redditSentiment || 50) * yesterdayRedditWeight + 
+              (yesterdaySourcesData.stocktwitsSentiment || 50) * yesterdayStocktwitsWeight + 
+              (yesterdaySourcesData.newsSentiment || 50) * yesterdayNewsWeight
+            );
+          }
           
           // Calculate day-over-day change as a percentage
           sentimentVelocity = yesterdayCombinedSentiment > 0 
@@ -148,9 +202,9 @@ export async function GET(request: NextRequest) {
           sentimentVelocity = (Math.random() - 0.5) * 5; // -2.5% to +2.5%
         }
 
-        // Determine signal strength based on multiple factors
+        // Determine signal strength based on multiple factors  
         const signalStrength = Math.min(5, Math.max(1, Math.round(
-          (sentimentData.sentiment_score * 0.4 + 
+          (todayCombinedSentiment * 0.4 + 
            sentimentData.confidence * 0.3 + 
            Math.abs(correlation) * 100 * 0.3) / 20
         )));
@@ -163,13 +217,13 @@ export async function GET(request: NextRequest) {
 
         // Generate recommendation based on sentiment and momentum
         let recommendation = 'HOLD';
-        if (sentimentData.sentiment_score > 75 && sentimentVelocity > 5 && riskLevel !== 'high') {
+        if (todayCombinedSentiment > 75 && sentimentVelocity > 5 && riskLevel !== 'high') {
           recommendation = 'BUY';
-        } else if (sentimentData.sentiment_score < 25 && sentimentVelocity < -5) {
+        } else if (todayCombinedSentiment < 25 && sentimentVelocity < -5) {
           recommendation = 'SELL';
-        } else if (sentimentData.sentiment_score < 40 && sentimentVelocity > 0) {
+        } else if (todayCombinedSentiment < 40 && sentimentVelocity > 0) {
           recommendation = 'WATCH';
-        } else if (sentimentData.sentiment_score < 40 && sentimentVelocity < -10) {
+        } else if (todayCombinedSentiment < 40 && sentimentVelocity < -10) {
           recommendation = 'AVOID';
         }
 
@@ -194,7 +248,7 @@ export async function GET(request: NextRequest) {
             }
           },
           update: {
-            sentimentScore: sentimentData.sentiment_score,
+            sentimentScore: todayCombinedSentiment,
             status: sentimentData.status,
             confidence: sentimentData.confidence,
             price: currentPrice,
@@ -207,7 +261,7 @@ export async function GET(request: NextRequest) {
           create: {
             ticker: asset.ticker,
             analysisDate,
-            sentimentScore: sentimentData.sentiment_score,
+            sentimentScore: todayCombinedSentiment,
             status: sentimentData.status,
             confidence: sentimentData.confidence,
             price: currentPrice,
@@ -219,12 +273,12 @@ export async function GET(request: NextRequest) {
           }
         });
 
-        console.log(`✓ ${asset.ticker}: Reddit Sentiment ${sentimentData.sentiment_score}, Price: $${currentPrice}, Change: ${priceChange}%`);
+        console.log(`✓ ${asset.ticker}: Combined Sentiment ${todayCombinedSentiment}, Price: $${currentPrice}, Change: ${priceChange}%`);
         
         return {
           ticker: asset.ticker,
           success: true,
-          sentimentScore: sentimentData.sentiment_score,
+          sentimentScore: todayCombinedSentiment,
           status: sentimentData.status
         };
       } catch (error) {

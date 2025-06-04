@@ -19,7 +19,7 @@ interface GrokSentimentResponse {
   };
 }
 
-const GROK_API_KEY = process.env.GROK_API_KEY;
+const GROK_API_KEY = 'xai-APvkACuzEQr5F4SxPAY79yCMMLroaZSJ33c17hbt7PjNY7lucVlBaqaq4o7ast2WrSrsybkN5ZlUhxLt';
 const GROK_API_URL = 'https://api.x.ai/v1/chat/completions';
 
 export async function analyzeSentiment(
@@ -41,112 +41,29 @@ export async function analyzeSentiment(
     
     const totalDataPoints = redditData.mentions_count + stocktwitsData.mentions_count + newsData.article_count;
     
-    // If we have the Grok API key, use AI-powered analysis
-    if (GROK_API_KEY) {
-      try {
-        const currentDate = new Date().toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
-        });
-        
-        const prompt = `You are a financial analyst providing comprehensive analysis for ${name} (${ticker}) on ${currentDate}.
-
-As a professional analyst, provide fundamental and technical analysis based on:
-- Recent earnings reports and financial performance
-- Latest company news, product launches, and strategic developments
-- Industry trends and competitive positioning
-- Macroeconomic factors and sector outlook
-- Technical chart patterns and price action
-
-Reference data: Social sentiment shows ${redditData.mentions_count} Reddit mentions, ${stocktwitsData.mentions_count} StockTwits messages, and ${newsData.article_count} news articles.
-
-Provide a comprehensive financial analysis with this exact JSON structure:
-{
-  "sentiment_score": <0-100 based on fundamental outlook and market conditions>,
-  "confidence": <0-100 confidence level>,
-  "status": "<bullish|neutral|bearish>",
-  "insights": "<2-3 sentences explaining the investment thesis based on fundamentals and news>",
-  "volume_signal": "<e.g., significantly increasing, normal, declining>",
-  "momentum": "<e.g., strong upward, steady, weakening>",
-  "key_factors": [<3-5 key fundamental and technical factors>],
-  "sentiment_cases": {
-    "bullish": "<Detailed bullish investment case based on: (1) Strong fundamentals like revenue growth, earnings beats, new product cycles (2) Positive industry trends and market positioning (3) Technical breakouts above key resistance levels (4) Upcoming catalysts like earnings dates, product launches, or regulatory approvals. Include specific price targets and timeframes.>",
-    "bearish": "<Detailed bearish investment case based on: (1) Fundamental concerns like slowing growth, margin pressure, or competitive threats (2) Industry headwinds or regulatory risks (3) Technical breakdown below support levels (4) Upcoming risks like earnings misses, product delays, or market saturation. Include specific downside targets and key levels to watch.>",
-    "neutral": "<Balanced investment case explaining: (1) Mixed fundamental signals with both strengths and concerns (2) Range-bound technical patterns with unclear direction (3) Upcoming events that could provide clarity (earnings, FDA approvals, product launches) (4) Key price levels that would trigger bullish or bearish scenarios. Include specific levels to monitor.>"
-  }
-}
-
-CRITICAL: Base your analysis on actual market fundamentals, not social media sentiment. Focus on:
-- Company financial health and growth prospects
-- Industry dynamics and competitive advantages
-- Recent earnings, guidance, and analyst upgrades/downgrades
-- Technical analysis of price trends and key levels
-- Macroeconomic factors affecting the ${assetType === 'crypto' ? 'cryptocurrency' : 'equity'} markets
-- Specific upcoming events and their potential market impact
-
-Provide actionable investment insights with specific price levels, dates, and catalysts.`;
-
-        const response = await fetch(GROK_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROK_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'grok-3-mini',
-            messages: [{
-              role: 'user',
-              content: prompt
-            }],
-            temperature: 0.3,
-            max_tokens: 1200
-          })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Grok API error response:', errorText);
-          throw new Error(`Grok API error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const content = data.choices[0].message.content;
-        
-        // Clean and parse the JSON response
-        const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
-        const grokAnalysis = JSON.parse(cleanContent);
-        
-        const sentimentData: GrokSentimentResponse = {
-          sentiment_score: grokAnalysis.sentiment_score,
-          confidence: grokAnalysis.confidence,
-          status: grokAnalysis.status,
-          insights: grokAnalysis.insights,
-          volume_signal: grokAnalysis.volume_signal,
-          momentum: grokAnalysis.momentum,
-          key_factors: grokAnalysis.key_factors,
-          sources_analyzed: 3,
-          mentions_count: totalDataPoints,
-          sentiment_cases: grokAnalysis.sentiment_cases
-        };
-        
-        console.log(`✅ Grok AI sentiment for ${ticker}: Score=${sentimentData.sentiment_score}, Status=${sentimentData.status}`);
-        return sentimentData;
-        
-      } catch (grokError) {
-        console.error('Grok API error, falling back to calculated sentiment:', grokError);
-        // Fall through to calculated sentiment below
-      }
-    }
-    
-    // Fallback: Calculate sentiment if Grok API is not available
+    // Calculate combined sentiment using 40/40/20 approach with Reddit minimum 10%
     let combinedSentiment: number;
     if (totalDataPoints === 0) {
       combinedSentiment = 50;
     } else {
-      const redditWeight = redditData.mentions_count / totalDataPoints;
-      const stocktwitsWeight = stocktwitsData.mentions_count / totalDataPoints;
-      const newsWeight = newsData.article_count / totalDataPoints;
+      // Calculate proportional weights but ensure Reddit gets minimum 10%
+      let redditWeight = redditData.mentions_count / totalDataPoints;
+      let stocktwitsWeight = stocktwitsData.mentions_count / totalDataPoints;
+      let newsWeight = newsData.article_count / totalDataPoints;
+      
+      // Ensure Reddit weight is at least 10%
+      if (redditWeight < 0.1) {
+        const deficit = 0.1 - redditWeight;
+        redditWeight = 0.1;
+        
+        // Redistribute the deficit proportionally from other sources
+        const otherTotal = stocktwitsWeight + newsWeight;
+        if (otherTotal > 0) {
+          const reductionFactor = (1 - redditWeight) / otherTotal;
+          stocktwitsWeight *= reductionFactor;
+          newsWeight *= reductionFactor;
+        }
+      }
       
       combinedSentiment = Math.round(
         redditData.sentiment_score * redditWeight + 
@@ -165,6 +82,72 @@ Provide actionable investment insights with specific price levels, dates, and ca
     }
     
     const confidence = Math.min(95, Math.max(50, 50 + Math.log10(totalDataPoints + 1) * 15));
+    
+    // Generate AI analysis cases using Grok (only for analysis, not sentiment calculation)
+    let sentimentCases = {
+      bullish: `Bullish case for ${name}: Positive social sentiment with ${totalDataPoints} total mentions. Key factors include strong community engagement and positive news flow. Watch for continued momentum and technical breakouts.`,
+      bearish: `Bearish case for ${name}: Market volatility and mixed signals may pressure the stock. Consider profit-taking levels and potential resistance areas. Monitor for any negative developments.`,
+      neutral: `Neutral case for ${name}: Balanced sentiment across sources suggests consolidation. Watch for clear directional catalysts or volume breakouts to confirm the next move.`
+    };
+    
+    if (GROK_API_KEY) {
+      console.log(`🔑 Grok API key found, attempting AI analysis for ${ticker}...`);
+      try {
+        const prompt = `You are a financial analyst. Analyze ${name} (${ticker}) and provide detailed sentiment cases in this exact JSON structure:
+
+{
+  "sentiment_cases": {
+    "bullish": "<Detailed bullish case: Strong fundamentals (revenue growth, earnings beats, new products), positive industry trends, technical breakouts, upcoming catalysts. Include specific insights.>",
+    "bearish": "<Detailed bearish case: Fundamental concerns (slowing growth, margin pressure, competition), industry headwinds, technical breakdown, upcoming risks. Include specific insights.>",
+    "neutral": "<Balanced case: Mixed signals, range-bound patterns, upcoming events for clarity, key levels to monitor. Include specific insights.>"
+  }
+}
+
+Base analysis on: Recent earnings/financial performance, company news/developments, industry trends, technical patterns, macroeconomic factors affecting ${assetType === 'crypto' ? 'crypto' : 'equity'} markets.
+
+Social data context: ${redditData.mentions_count} Reddit mentions (${redditData.sentiment_score}%), ${stocktwitsData.mentions_count} StockTwits messages (${stocktwitsData.sentiment_score}%), ${newsData.article_count} news articles (${newsData.sentiment_score}%).
+
+IMPORTANT: Keep sentiment_cases concise but detailed with specific fundamental insights. Focus on actionable investment analysis.`;
+
+        const response = await fetch(GROK_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'grok-3-mini',
+            messages: [{
+              role: 'user',
+              content: prompt
+            }],
+            temperature: 0.3,
+            max_tokens: 1500
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices[0].message.content;
+          
+          // Clean and parse the JSON response
+          let cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+          
+          try {
+            const grokAnalysis = JSON.parse(cleanContent);
+            if (grokAnalysis.sentiment_cases) {
+              sentimentCases = grokAnalysis.sentiment_cases;
+              console.log(`✅ Grok AI analysis cases received for ${ticker}`);
+            }
+          } catch (parseError) {
+            console.warn(`Failed to parse Grok analysis for ${ticker}, using fallback cases`);
+          }
+        }
+        
+      } catch (grokError) {
+        console.warn(`Grok API error for ${ticker}, using fallback analysis cases:`, grokError.message);
+      }
+    }
     
     let insights = '';
     if (status === 'bullish') {
@@ -188,13 +171,6 @@ Provide actionable investment insights with specific price levels, dates, and ca
     } else if (status === 'bearish') {
       momentum = 'weakening';
     }
-    
-    // Basic fallback sentiment cases
-    const sentimentCases = {
-      bullish: `Bullish case for ${name}: Positive social sentiment with ${totalDataPoints} total mentions. Key factors include strong community engagement and positive news flow. Watch for continued momentum and technical breakouts.`,
-      bearish: `Bearish case for ${name}: Market volatility and mixed signals may pressure the stock. Consider profit-taking levels and potential resistance areas. Monitor for any negative developments.`,
-      neutral: `Neutral case for ${name}: Balanced sentiment across sources suggests consolidation. Watch for clear directional catalysts or volume breakouts to confirm the next move.`
-    };
     
     const sentimentData: GrokSentimentResponse = {
       sentiment_score: combinedSentiment,
