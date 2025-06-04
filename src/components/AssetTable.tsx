@@ -138,7 +138,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
 
   // Helper functions for AI analysis slider
   const getDefaultCase = (asset: AssetWithSentiment): 'bearish' | 'neutral' | 'bullish' => {
-    const score = calculateCombinedSentiment(asset);
+    const score = getCombinedSentiment(asset);
     if (score >= 70) return 'bullish';
     if (score >= 40) return 'neutral';  
     return 'bearish';
@@ -152,16 +152,13 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
     setSelectedCases(prev => ({ ...prev, [ticker]: caseType }));
   };
 
-  // Calculate weighted combined sentiment (matches cron job calculation)
-  const calculateCombinedSentiment = (asset: AssetWithSentiment): number => {
+  // Use stored sentiment score (calculated by cron job with weighted approach)
+  const getCombinedSentiment = (asset: AssetWithSentiment): number => {
     if (!asset.sentiment) return 0;
     
-    const reddit = asset.sentiment.sourcesData.redditSentiment || 0;
-    const stocktwits = asset.sentiment.sourcesData.stocktwitsSentiment || 0;
-    const news = asset.sentiment.sourcesData.newsSentiment || 50;
-    
-    // Weighted average: Reddit 40%, StockTwits 40%, News 20% (matches cron job)
-    return Math.round(reddit * 0.4 + stocktwits * 0.4 + news * 0.2);
+    // Use the sentiment score calculated and stored by the cron job
+    // This uses the proper weighted calculation with Reddit minimum 10%
+    return asset.sentiment.sentimentScore;
   };
 
   const handleSort = (key: string) => {
@@ -175,7 +172,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
     switch (key) {
       case 'ticker': return asset.ticker;
       case 'name': return asset.name;
-      case 'sentimentScore': return calculateCombinedSentiment(asset);
+      case 'sentimentScore': return getCombinedSentiment(asset);
       case 'correlation': return asset.sentiment?.correlation || 0;
       case 'status': return asset.sentiment?.status || '';
       case 'change24h': return asset.sentiment?.change24h || 0;
@@ -326,15 +323,15 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold">
-                          {asset.sentiment ? calculateCombinedSentiment(asset) : '--'}
+                          {asset.sentiment ? getCombinedSentiment(asset) : '--'}
                         </span>
                         <div className="flex-1 max-w-[40px]">
                           <div className="h-0.5 bg-background-tertiary rounded-full overflow-hidden">
                             <div 
                               className="h-full transition-all duration-300 rounded-full"
                               style={{
-                                width: `${asset.sentiment ? calculateCombinedSentiment(asset) : 0}%`,
-                                backgroundColor: getSentimentColor(asset.sentiment ? calculateCombinedSentiment(asset) : 0)
+                                width: `${asset.sentiment ? getCombinedSentiment(asset) : 0}%`,
+                                backgroundColor: getSentimentColor(asset.sentiment ? getCombinedSentiment(asset) : 0)
                               }}
                             />
                           </div>
@@ -509,7 +506,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                         <div className="bg-background-primary rounded-lg p-4 border border-border-primary">
                           <HistoricalSentimentChart 
                             ticker={asset.ticker}
-                            currentSentiment={calculateCombinedSentiment(asset)}
+                            currentSentiment={getCombinedSentiment(asset)}
                             currentPrice={asset.sentiment.price}
                             currentCorrelation={asset.sentiment.correlation || 0}
                           />
@@ -546,8 +543,8 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                     <div className="flex items-center gap-3 mt-1">
                       {/* Combined Sentiment */}
                       <div className="flex items-center gap-1">
-                        <span className="text-lg font-bold" style={{ color: getSentimentColor(asset.sentiment ? calculateCombinedSentiment(asset) : 0) }}>
-                          {asset.sentiment ? calculateCombinedSentiment(asset) : '--'}
+                        <span className="text-lg font-bold" style={{ color: getSentimentColor(asset.sentiment ? getCombinedSentiment(asset) : 0) }}>
+                          {asset.sentiment ? getCombinedSentiment(asset) : '--'}
                         </span>
                         <span className="text-[10px] text-text-muted">sentiment</span>
                       </div>
@@ -750,7 +747,7 @@ export default function AssetTable({ assets, lastSentimentUpdate }: AssetTablePr
                 <div className="bg-background-primary rounded-lg p-3 border border-border-primary">
                   <HistoricalSentimentChart 
                     ticker={asset.ticker}
-                    currentSentiment={calculateCombinedSentiment(asset)}
+                    currentSentiment={getCombinedSentiment(asset)}
                     currentPrice={asset.sentiment.price}
                     currentCorrelation={asset.sentiment.correlation || 0}
                   />
