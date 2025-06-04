@@ -1,7 +1,8 @@
 'use client';
 
-import { Search, Moon, Sun } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import HamburgerMenu from './HamburgerMenu';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -75,15 +76,8 @@ export default function Header({ onSearch }: HeaderProps) {
               />
             </div>
 
-            {/* Action Buttons */}
-            <button 
-              onClick={toggleTheme}
-              className="p-1.5 bg-background-primary border border-border-primary rounded-md hover:bg-background-tertiary transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-            
+            {/* Hamburger Menu */}
+            <HamburgerMenu theme={theme} onThemeToggle={toggleTheme} />
 
           </div>
         </div>

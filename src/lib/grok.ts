@@ -240,4 +240,4 @@ Provide actionable investment insights with specific price levels, dates, and ca
   }
 }
 
-export { GrokSentimentResponse };
+export type { GrokSentimentResponse };
